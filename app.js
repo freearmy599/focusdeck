@@ -35,7 +35,7 @@
       if (!parsed || typeof parsed !== 'object' || !Array.isArray(parsed.tasks)) return freshState();
       return {
         ...freshState(), ...parsed,
-        tasks: parsed.tasks.map(t => ({ id: String(t.id || makeId()), title: String(t.title || 'Untitled task'), priority: ['high','medium','low'].includes(t.priority) ? t.priority : 'medium', category: String(t.category || 'Personal'), dueDate: typeof t.dueDate === 'string' ? t.dueDate : '', repeat: ['daily','weekdays','weekly','monthly'].includes(t.repeat) ? t.repeat : 'none', recurrenceId: String(t.recurrenceId || t.id || makeId()), createdAt: safeNumber(t.createdAt, Date.now()), completed: Boolean(t.completed), completedAt: safeNumber(t.completedAt, 0) })),
+        tasks: parsed.tasks.map(t => ({ id: String(t.id || makeId()), title: String(t.title || 'Untitled task').slice(0,180), description: String(t.description || '').slice(0,1000), priority: ['high','medium','low'].includes(t.priority) ? t.priority : 'medium', category: String(t.category || 'Personal').slice(0,50), dueDate: typeof t.dueDate === 'string' ? t.dueDate : '', repeat: ['daily','weekdays','weekly','monthly'].includes(t.repeat) ? t.repeat : 'none', recurrenceId: String(t.recurrenceId || t.id || makeId()), createdAt: safeNumber(t.createdAt, Date.now()), completed: Boolean(t.completed), completedAt: safeNumber(t.completedAt, 0) })),
         goalsByDate: parsed.goalsByDate && typeof parsed.goalsByDate === 'object' ? parsed.goalsByDate : { [todayKey()]: defaultGoals() },
         notes: typeof parsed.notes === 'string' ? parsed.notes : '',
         theme: parsed.theme === 'light' ? 'light' : 'dark',
@@ -130,7 +130,7 @@
       (due ? '<span>·</span><span class="' + (overdue ? 'due-overdue' : '') + '">' + (overdue ? 'Overdue · ' : 'Due ') + escapeHTML(due) + '</span>' : '') + (task.repeat && task.repeat !== 'none' ? '<span class="task-repeat">↻ ' + ({daily:'Daily',weekdays:'Weekdays',weekly:'Weekly',monthly:'Monthly'}[task.repeat] || 'Repeats') + '</span>' : '');
     return '<div class="task-row ' + (task.completed ? 'completed' : '') + '" data-task-row="' + escapeHTML(task.id) + '">' +
       '<input class="task-check" type="checkbox" data-action="toggle-task" data-id="' + escapeHTML(task.id) + '" ' + (task.completed ? 'checked' : '') + ' aria-label="' + (task.completed ? 'Mark incomplete' : 'Complete') + ' ' + escapeHTML(task.title) + '">' +
-      '<div class="task-main"><span class="task-title">' + escapeHTML(task.title) + '</span><div class="task-meta">' + meta + '</div></div>' +
+      '<div class="task-main"><span class="task-title">' + escapeHTML(task.title) + '</span>' + (task.description ? '<span class="task-description">' + escapeHTML(task.description) + '</span>' : '') + '<div class="task-meta">' + meta + '</div></div>' +
       '<div class="task-actions"><button class="mini-action" data-action="edit-task" data-id="' + escapeHTML(task.id) + '" aria-label="Edit task" title="Edit">✎</button><button class="mini-action" data-action="delete-task" data-id="' + escapeHTML(task.id) + '" aria-label="Delete task" title="Delete">×</button></div></div>';
   }
   function emptyMarkup(title, copy, icon = '✳', compact = false) {
@@ -184,7 +184,7 @@
     const nextWeek = new Date(); nextWeek.setDate(nextWeek.getDate() + 7);
     const nextWeekKey = todayKey(nextWeek);
     let tasks = state.tasks.filter(t => {
-      const matchesSearch = !search || (t.title + ' ' + t.category).toLowerCase().includes(search);
+      const matchesSearch = !search || (t.title + ' ' + t.category + ' ' + (t.description || '')).toLowerCase().includes(search);
       const matchesStatus = status === 'all' || (status === 'done' ? t.completed : !t.completed);
       const matchesDate = dateFilter === 'all' ||
         (dateFilter === 'today' && t.dueDate === today) ||
@@ -221,11 +221,13 @@
     $('task-modal-title').textContent = id ? 'Edit task' : 'Add a task';
     $('task-save').innerHTML = id ? 'Save changes <span>→</span>' : 'Save task <span>→</span>';
     $('task-repeat').value = 'none';
+    $('task-description').value = '';
     if (id) {
       const task = state.tasks.find(t => t.id === id);
       if (!task) return;
       $('task-id').value = task.id;
       $('task-title').value = task.title;
+      $('task-description').value = task.description || '';
       $('task-priority').value = task.priority;
       $('task-category').value = task.category;
       $('task-due-date').value = task.dueDate;
@@ -248,7 +250,7 @@
     const id = $('task-id').value;
     const existing = state.tasks.find(t => t.id === id);
     const task = {
-      id: existing ? existing.id : makeId(), title, priority: $('task-priority').value,
+      id: existing ? existing.id : makeId(), title, description: $('task-description').value.trim().slice(0,1000), priority: $('task-priority').value,
       category: $('task-category').value, dueDate: $('task-due-date').value, repeat: $('task-repeat').value,
       recurrenceId: existing ? (existing.recurrenceId || existing.id) : makeId(),
       createdAt: existing ? existing.createdAt : Date.now(),
@@ -442,7 +444,7 @@
         if (!window.confirm('Import this backup and replace the data currently saved in FocusDeck?')) return;
         const cleaned = {
           ...freshState(), ...parsed,
-          tasks: parsed.tasks.map(t => ({ id: String(t.id || makeId()), title: String(t.title || '').slice(0,180), priority: ['high','medium','low'].includes(t.priority) ? t.priority : 'medium', category: String(t.category || 'Personal').slice(0,50), dueDate: typeof t.dueDate === 'string' ? t.dueDate : '', repeat: ['daily','weekdays','weekly','monthly'].includes(t.repeat) ? t.repeat : 'none', recurrenceId: String(t.recurrenceId || t.id || makeId()), createdAt: safeNumber(t.createdAt, Date.now()), completed: Boolean(t.completed), completedAt: safeNumber(t.completedAt, 0) })).filter(t => t.title.trim()),
+          tasks: parsed.tasks.map(t => ({ id: String(t.id || makeId()), title: String(t.title || '').slice(0,180), description: String(t.description || '').slice(0,1000), priority: ['high','medium','low'].includes(t.priority) ? t.priority : 'medium', category: String(t.category || 'Personal').slice(0,50), dueDate: typeof t.dueDate === 'string' ? t.dueDate : '', repeat: ['daily','weekdays','weekly','monthly'].includes(t.repeat) ? t.repeat : 'none', recurrenceId: String(t.recurrenceId || t.id || makeId()), createdAt: safeNumber(t.createdAt, Date.now()), completed: Boolean(t.completed), completedAt: safeNumber(t.completedAt, 0) })).filter(t => t.title.trim()),
           notes: typeof parsed.notes === 'string' ? parsed.notes.slice(0,20000) : '',
           theme: parsed.theme === 'light' ? 'light' : 'dark',
           goalsByDate: parsed.goalsByDate && typeof parsed.goalsByDate === 'object' ? parsed.goalsByDate : {},
