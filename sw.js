@@ -1,6 +1,6 @@
 'use strict';
-const CACHE_NAME = 'focusdeck-shell-v2';
-const APP_SHELL = ['./', './index.html', './styles.css', './app.js', './manifest.webmanifest', './assets/focusdeck-icon.svg', './privacy.html'];
+const CACHE_NAME = 'focusdeck-shell-v3';
+const APP_SHELL = ['./', './index.html', './styles.css', './app.js', './manifest.webmanifest', './assets/focusdeck-icon.svg', './privacy.html', './planning-guide.html'];
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(APP_SHELL)).then(() => self.skipWaiting()));
 });
