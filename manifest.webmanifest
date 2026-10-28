@@ -1,0 +1,19 @@
+{
+  "name": "FocusDeck — Make today count",
+  "short_name": "FocusDeck",
+  "description": "A calm, focused workspace for tasks, daily goals, quick notes and focus sessions.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0b0f14",
+  "theme_color": "#0b0f14",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "./assets/focusdeck-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
