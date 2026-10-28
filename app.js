@@ -179,6 +179,7 @@
   function renderFullTasks() {
     const search = $('task-search').value.trim().toLowerCase();
     const status = $('task-status-filter').value, sort = $('task-sort').value;
+    const category = $('task-category-filter').value;
     const dateFilter = $('task-date-filter').value;
     const today = todayKey();
     const nextWeek = new Date(); nextWeek.setDate(nextWeek.getDate() + 7);
@@ -186,12 +187,13 @@
     let tasks = state.tasks.filter(t => {
       const matchesSearch = !search || (t.title + ' ' + t.category + ' ' + (t.description || '')).toLowerCase().includes(search);
       const matchesStatus = status === 'all' || (status === 'done' ? t.completed : !t.completed);
+      const matchesCategory = category === 'all' || t.category === category;
       const matchesDate = dateFilter === 'all' ||
         (dateFilter === 'today' && t.dueDate === today) ||
         (dateFilter === 'overdue' && Boolean(t.dueDate) && t.dueDate < today && !t.completed) ||
         (dateFilter === 'upcoming' && Boolean(t.dueDate) && t.dueDate > today && t.dueDate <= nextWeekKey) ||
         (dateFilter === 'undated' && !t.dueDate);
-      return matchesSearch && matchesStatus && matchesDate;
+      return matchesSearch && matchesStatus && matchesCategory && matchesDate;
     });
     if (sort === 'priority') tasks.sort((a,b) => Number(a.completed)-Number(b.completed) || ({high:0,medium:1,low:2}[a.priority]-{high:0,medium:1,low:2}[b.priority]) || b.createdAt-a.createdAt);
     else if (sort === 'date') tasks.sort((a,b) => Number(a.completed)-Number(b.completed) || (a.dueDate || '9999').localeCompare(b.dueDate || '9999'));
@@ -490,6 +492,7 @@
     $$('.filter-chip').forEach(b => b.addEventListener('click', () => { currentTaskFilter = b.dataset.taskFilter; renderDashboard(); }));
     $('task-search').addEventListener('input', renderFullTasks);
     $('task-status-filter').addEventListener('change', renderFullTasks);
+    $('task-category-filter').addEventListener('change', renderFullTasks);
     $('task-sort').addEventListener('change', renderFullTasks);
     $('task-date-filter').addEventListener('change', renderFullTasks);
     $('edit-goals').addEventListener('click', editGoals);
