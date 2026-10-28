@@ -179,7 +179,12 @@
   function renderFullTasks() {
     const search = $('task-search').value.trim().toLowerCase();
     const status = $('task-status-filter').value, sort = $('task-sort').value;
-    const category = $('task-category-filter').value;
+    const categoryFilter = $('task-category-filter');
+    const category = categoryFilter.value;
+    const knownCategories = [...new Set(['Personal','Work','Study','Health','Other', ...state.tasks.map(t => String(t.category || '').trim()).filter(Boolean)])].sort((a,b) => a.localeCompare(b));
+    categoryFilter.innerHTML = '<option value="all">All categories</option>' + knownCategories.map(name => '<option value="' + escapeHTML(name) + '">' + escapeHTML(name) + '</option>').join('');
+    categoryFilter.value = knownCategories.includes(category) || category === 'all' ? category : 'all';
+    const activeCategory = categoryFilter.value;
     const dateFilter = $('task-date-filter').value;
     const today = todayKey();
     const nextWeek = new Date(); nextWeek.setDate(nextWeek.getDate() + 7);
@@ -187,7 +192,7 @@
     let tasks = state.tasks.filter(t => {
       const matchesSearch = !search || (t.title + ' ' + t.category + ' ' + (t.description || '')).toLowerCase().includes(search);
       const matchesStatus = status === 'all' || (status === 'done' ? t.completed : !t.completed);
-      const matchesCategory = category === 'all' || t.category === category;
+      const matchesCategory = activeCategory === 'all' || t.category === activeCategory;
       const matchesDate = dateFilter === 'all' ||
         (dateFilter === 'today' && t.dueDate === today) ||
         (dateFilter === 'overdue' && Boolean(t.dueDate) && t.dueDate < today && !t.completed) ||
@@ -231,7 +236,7 @@
       $('task-title').value = task.title;
       $('task-description').value = task.description || '';
       $('task-priority').value = task.priority;
-      $('task-category').value = task.category;
+      $('task-category').value = task.category || 'Personal';
       $('task-due-date').value = task.dueDate;
       $('task-repeat').value = task.repeat || 'none';
     } else {
@@ -253,7 +258,7 @@
     const existing = state.tasks.find(t => t.id === id);
     const task = {
       id: existing ? existing.id : makeId(), title, description: $('task-description').value.trim().slice(0,1000), priority: $('task-priority').value,
-      category: $('task-category').value, dueDate: $('task-due-date').value, repeat: $('task-repeat').value,
+      category: ($('task-category').value.trim() || 'Personal').slice(0,50), dueDate: $('task-due-date').value, repeat: $('task-repeat').value,
       recurrenceId: existing ? (existing.recurrenceId || existing.id) : makeId(),
       createdAt: existing ? existing.createdAt : Date.now(),
       completed: existing ? existing.completed : false,
