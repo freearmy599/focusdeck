@@ -34,7 +34,7 @@
       if (!parsed || typeof parsed !== 'object' || !Array.isArray(parsed.tasks)) return freshState();
       return {
         ...freshState(), ...parsed,
-        tasks: parsed.tasks.map(t => ({ id: String(t.id || makeId()), title: String(t.title || 'Untitled task'), priority: ['high','medium','low'].includes(t.priority) ? t.priority : 'medium', category: String(t.category || 'Personal'), dueDate: typeof t.dueDate === 'string' ? t.dueDate : '', createdAt: safeNumber(t.createdAt, Date.now()), completed: Boolean(t.completed), completedAt: safeNumber(t.completedAt, 0) })),
+        tasks: parsed.tasks.map(t => ({ id: String(t.id || makeId()), title: String(t.title || 'Untitled task'), priority: ['high','medium','low'].includes(t.priority) ? t.priority : 'medium', category: String(t.category || 'Personal'), dueDate: typeof t.dueDate === 'string' ? t.dueDate : '', repeat: ['daily','weekdays','weekly','monthly'].includes(t.repeat) ? t.repeat : 'none', recurrenceId: String(t.recurrenceId || t.id || makeId()), createdAt: safeNumber(t.createdAt, Date.now()), completed: Boolean(t.completed), completedAt: safeNumber(t.completedAt, 0) })),
         goalsByDate: parsed.goalsByDate && typeof parsed.goalsByDate === 'object' ? parsed.goalsByDate : { [todayKey()]: defaultGoals() },
         notes: typeof parsed.notes === 'string' ? parsed.notes : '',
         theme: parsed.theme === 'light' ? 'light' : 'dark',
@@ -106,7 +106,7 @@
     const due = task.dueDate ? dateLabel(new Date(task.dueDate + 'T12:00:00'), { month: 'short', day: 'numeric' }) : '';
     const meta = '<span><i class="priority-dot priority-' + task.priority + '"></i>' + task.priority[0].toUpperCase() + task.priority.slice(1) + '</span>' +
       '<span>·</span><span>' + escapeHTML(task.category) + '</span>' +
-      (due ? '<span>·</span><span class="' + (overdue ? 'due-overdue' : '') + '">' + (overdue ? 'Overdue · ' : 'Due ') + escapeHTML(due) + '</span>' : '');
+      (due ? '<span>·</span><span class="' + (overdue ? 'due-overdue' : '') + '">' + (overdue ? 'Overdue · ' : 'Due ') + escapeHTML(due) + '</span>' : '') + (task.repeat && task.repeat !== 'none' ? '<span class="task-repeat">↻ ' + ({daily:'Daily',weekdays:'Weekdays',weekly:'Weekly',monthly:'Monthly'}[task.repeat] || 'Repeats') + '</span>' : '');
     return '<div class="task-row ' + (task.completed ? 'completed' : '') + '" data-task-row="' + escapeHTML(task.id) + '">' +
       '<input class="task-check" type="checkbox" data-action="toggle-task" data-id="' + escapeHTML(task.id) + '" ' + (task.completed ? 'checked' : '') + ' aria-label="' + (task.completed ? 'Mark incomplete' : 'Complete') + ' ' + escapeHTML(task.title) + '">' +
       '<div class="task-main"><span class="task-title">' + escapeHTML(task.title) + '</span><div class="task-meta">' + meta + '</div></div>' +
@@ -158,7 +158,20 @@
   function renderFullTasks() {
     const search = $('task-search').value.trim().toLowerCase();
     const status = $('task-status-filter').value, sort = $('task-sort').value;
-    let tasks = state.tasks.filter(t => (!search || (t.title + ' ' + t.category).toLowerCase().includes(search)) && (status === 'all' || (status === 'done' ? t.completed : !t.completed)));
+    const dateFilter = $('task-date-filter').value;
+    const today = todayKey();
+    const nextWeek = new Date(); nextWeek.setDate(nextWeek.getDate() + 7);
+    const nextWeekKey = todayKey(nextWeek);
+    let tasks = state.tasks.filter(t => {
+      const matchesSearch = !search || (t.title + ' ' + t.category).toLowerCase().includes(search);
+      const matchesStatus = status === 'all' || (status === 'done' ? t.completed : !t.completed);
+      const matchesDate = dateFilter === 'all' ||
+        (dateFilter === 'today' && t.dueDate === today) ||
+        (dateFilter === 'overdue' && Boolean(t.dueDate) && t.dueDate < today && !t.completed) ||
+        (dateFilter === 'upcoming' && Boolean(t.dueDate) && t.dueDate > today && t.dueDate <= nextWeekKey) ||
+        (dateFilter === 'undated' && !t.dueDate);
+      return matchesSearch && matchesStatus && matchesDate;
+    });
     if (sort === 'priority') tasks.sort((a,b) => Number(a.completed)-Number(b.completed) || ({high:0,medium:1,low:2}[a.priority]-{high:0,medium:1,low:2}[b.priority]) || b.createdAt-a.createdAt);
     else if (sort === 'date') tasks.sort((a,b) => Number(a.completed)-Number(b.completed) || (a.dueDate || '9999').localeCompare(b.dueDate || '9999'));
     else tasks.sort((a,b) => b.createdAt-a.createdAt);
@@ -186,6 +199,7 @@
     $('task-id').value = '';
     $('task-modal-title').textContent = id ? 'Edit task' : 'Add a task';
     $('task-save').innerHTML = id ? 'Save changes <span>→</span>' : 'Save task <span>→</span>';
+    $('task-repeat').value = 'none';
     if (id) {
       const task = state.tasks.find(t => t.id === id);
       if (!task) return;
@@ -194,6 +208,7 @@
       $('task-priority').value = task.priority;
       $('task-category').value = task.category;
       $('task-due-date').value = task.dueDate;
+      $('task-repeat').value = task.repeat || 'none';
     } else {
       $('task-priority').value = 'medium';
       $('task-category').value = 'Personal';
@@ -213,7 +228,8 @@
     const existing = state.tasks.find(t => t.id === id);
     const task = {
       id: existing ? existing.id : makeId(), title, priority: $('task-priority').value,
-      category: $('task-category').value, dueDate: $('task-due-date').value,
+      category: $('task-category').value, dueDate: $('task-due-date').value, repeat: $('task-repeat').value,
+      recurrenceId: existing ? (existing.recurrenceId || existing.id) : makeId(),
       createdAt: existing ? existing.createdAt : Date.now(),
       completed: existing ? existing.completed : false,
       completedAt: existing ? existing.completedAt : 0
@@ -222,16 +238,42 @@
     else state.tasks.unshift(task);
     saveState(); closeTaskModal(); renderAll(); showToast(existing ? 'Task updated.' : 'Task added.');
   }
+  function nextDueDate(date, repeat) {
+    const base = new Date((date || todayKey()) + 'T12:00:00');
+    if (repeat === 'daily') base.setDate(base.getDate() + 1);
+    else if (repeat === 'weekdays') {
+      do { base.setDate(base.getDate() + 1); } while (base.getDay() === 0 || base.getDay() === 6);
+    } else if (repeat === 'weekly') base.setDate(base.getDate() + 7);
+    else if (repeat === 'monthly') {
+      const day = base.getDate();
+      base.setDate(1);
+      base.setMonth(base.getMonth() + 1);
+      const lastDay = new Date(base.getFullYear(), base.getMonth() + 1, 0).getDate();
+      base.setDate(Math.min(day, lastDay));
+    }
+    return todayKey(base);
+  }
   function toggleTask(id, checked) {
     const task = state.tasks.find(t => t.id === id);
     if (!task) return;
     const previousCompletedAt = task.completedAt;
     task.completed = checked;
     task.completedAt = checked ? Date.now() : 0;
+    let recurrenceCreated = false;
+    if (checked && task.repeat && task.repeat !== 'none') {
+      const nextDate = nextDueDate(task.dueDate, task.repeat);
+      const seriesId = task.recurrenceId || task.id;
+      const alreadyScheduled = state.tasks.some(t => (t.recurrenceId || t.id) === seriesId && t.dueDate === nextDate && !t.completed);
+      if (!alreadyScheduled) {
+        state.tasks.unshift({ ...task, id: makeId(), recurrenceId: seriesId, dueDate: nextDate, createdAt: Date.now(), completed: false, completedAt: 0 });
+        recurrenceCreated = true;
+      }
+    }
     const activityDate = checked ? todayKey() : (previousCompletedAt ? todayKey(new Date(previousCompletedAt)) : todayKey());
     if (!state.activity[activityDate]) state.activity[activityDate] = { tasks: 0, minutes: 0 };
     state.activity[activityDate].tasks = Math.max(0, safeNumber(state.activity[activityDate].tasks) + (checked ? 1 : -1));
     saveState(); renderAll();
+    if (recurrenceCreated) showToast('Task completed. Next occurrence scheduled.');
   }
   function deleteTask(id) {
     const task = state.tasks.find(t => t.id === id);
@@ -374,7 +416,7 @@
         if (!window.confirm('Import this backup and replace the data currently saved in FocusDeck?')) return;
         const cleaned = {
           ...freshState(), ...parsed,
-          tasks: parsed.tasks.map(t => ({ id: String(t.id || makeId()), title: String(t.title || '').slice(0,180), priority: ['high','medium','low'].includes(t.priority) ? t.priority : 'medium', category: String(t.category || 'Personal').slice(0,50), dueDate: typeof t.dueDate === 'string' ? t.dueDate : '', createdAt: safeNumber(t.createdAt, Date.now()), completed: Boolean(t.completed), completedAt: safeNumber(t.completedAt, 0) })).filter(t => t.title.trim()),
+          tasks: parsed.tasks.map(t => ({ id: String(t.id || makeId()), title: String(t.title || '').slice(0,180), priority: ['high','medium','low'].includes(t.priority) ? t.priority : 'medium', category: String(t.category || 'Personal').slice(0,50), dueDate: typeof t.dueDate === 'string' ? t.dueDate : '', repeat: ['daily','weekdays','weekly','monthly'].includes(t.repeat) ? t.repeat : 'none', recurrenceId: String(t.recurrenceId || t.id || makeId()), createdAt: safeNumber(t.createdAt, Date.now()), completed: Boolean(t.completed), completedAt: safeNumber(t.completedAt, 0) })).filter(t => t.title.trim()),
           notes: typeof parsed.notes === 'string' ? parsed.notes.slice(0,20000) : '',
           theme: parsed.theme === 'light' ? 'light' : 'dark',
           goalsByDate: parsed.goalsByDate && typeof parsed.goalsByDate === 'object' ? parsed.goalsByDate : {},
@@ -420,6 +462,7 @@
     $('task-search').addEventListener('input', renderFullTasks);
     $('task-status-filter').addEventListener('change', renderFullTasks);
     $('task-sort').addEventListener('change', renderFullTasks);
+    $('task-date-filter').addEventListener('change', renderFullTasks);
     $('edit-goals').addEventListener('click', editGoals);
     $('dashboard-note').addEventListener('input', e => { saveNote(e.target.value); $('full-note').value = e.target.value; });
     $('full-note').addEventListener('input', e => { saveNote(e.target.value); $('dashboard-note').value = e.target.value.slice(0,5000); });
