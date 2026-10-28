@@ -143,7 +143,7 @@
     $('filter-done-count').textContent = todayTasks.filter(t => t.completed).length;
     $$('.filter-chip').forEach(b => b.classList.toggle('active', b.dataset.taskFilter === currentTaskFilter));
     renderGoals();
-    $('dashboard-note').value = state.notes;
+    $('dashboard-note').value = state.notes.slice(0, 5000);
     $('note-character-count').textContent = state.notes.length + ' / 5000';
     $('full-note').value = state.notes;
     $('full-note-count').textContent = state.notes.length + ' / 20000';
@@ -225,16 +225,12 @@
   function toggleTask(id, checked) {
     const task = state.tasks.find(t => t.id === id);
     if (!task) return;
+    const previousCompletedAt = task.completedAt;
     task.completed = checked;
     task.completedAt = checked ? Date.now() : 0;
-    if (checked) {
-      const key = todayKey();
-      if (!state.activity[key]) state.activity[key] = { tasks: 0, minutes: 0 };
-      state.activity[key].tasks = safeNumber(state.activity[key].tasks) + 1;
-    } else {
-      const key = todayKey();
-      if (state.activity[key]) state.activity[key].tasks = Math.max(0, safeNumber(state.activity[key].tasks) - 1);
-    }
+    const activityDate = checked ? todayKey() : (previousCompletedAt ? todayKey(new Date(previousCompletedAt)) : todayKey());
+    if (!state.activity[activityDate]) state.activity[activityDate] = { tasks: 0, minutes: 0 };
+    state.activity[activityDate].tasks = Math.max(0, safeNumber(state.activity[activityDate].tasks) + (checked ? 1 : -1));
     saveState(); renderAll();
   }
   function deleteTask(id) {
