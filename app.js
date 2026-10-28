@@ -25,6 +25,7 @@
   let activeView = 'dashboard';
   let currentTaskFilter = 'all';
   let toastTimer = null;
+  let taskModalReturnFocus = null;
   const CIRCUMFERENCE = 2 * Math.PI * 98;
 
   function loadState() {
@@ -223,6 +224,7 @@
     chart.innerHTML = days.map(d => '<div class="activity-day ' + (d.today ? 'today' : '') + '" title="' + d.tasks + ' tasks completed, ' + d.minutes + ' focus minutes"><span class="activity-day-value">' + (d.val || '—') + '</span><div class="activity-bar-track"><div class="activity-bar" style="height:' + Math.max(d.val ? 7 : 2, d.val / max * 100) + '%"></div></div><span class="activity-day-label">' + d.label + '</span></div>').join('');
   }
   function openTaskModal(id = '') {
+    taskModalReturnFocus = document.activeElement;
     $('task-form').reset();
     $('task-id').value = '';
     $('task-modal-title').textContent = id ? 'Edit task' : 'Add a task';
@@ -248,7 +250,12 @@
     window.setTimeout(() => $('task-title').focus(), 50);
   }
   function closeTaskModal() {
-    $('task-modal-backdrop').hidden = true;
+    const backdrop = $('task-modal-backdrop');
+    if (backdrop.hidden) return;
+    backdrop.hidden = true;
+    const returnFocus = taskModalReturnFocus;
+    taskModalReturnFocus = null;
+    if (returnFocus && typeof returnFocus.focus === 'function' && returnFocus.isConnected) returnFocus.focus();
   }
   function upsertTask(event) {
     event.preventDefault();
@@ -518,8 +525,26 @@
     $('import-data').addEventListener('change', e => importData(e.target.files && e.target.files[0]));
     $('reset-data').addEventListener('click', resetData);
     document.addEventListener('keydown', e => {
-      if (e.key === 'Escape') { closeTaskModal(); $('sidebar').classList.remove('open'); }
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); openTaskModal(); }
+      const backdrop = $('task-modal-backdrop');
+      if (!backdrop.hidden && e.key === 'Tab') {
+        const focusable = $('button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])', backdrop)
+          .filter(el => !el.hidden && el.getAttribute('aria-hidden') !== 'true' && el.getClientRects().length);
+        if (focusable.length) {
+          const first = focusable[0], last = focusable[focusable.length - 1];
+          if (e.shiftKey && (document.activeElement === first || !backdrop.contains(document.activeElement))) {
+            e.preventDefault(); last.focus();
+          } else if (!e.shiftKey && (document.activeElement === last || !backdrop.contains(document.activeElement))) {
+            e.preventDefault(); first.focus();
+          }
+        }
+      }
+      if (e.key === 'Escape') {
+        if (!backdrop.hidden) closeTaskModal();
+        $('sidebar').classList.remove('open');
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault(); openTaskModal();
+      }
     });
     document.addEventListener('visibilitychange', () => { if (!document.hidden && timer.running) tickTimer(); });
     window.addEventListener('beforeunload', () => { if (timer.running) { timer.remaining = Math.max(0, Math.ceil((timer.endAt - Date.now()) / 1000)); timer.running = false; if (timer.interval) window.clearInterval(timer.interval); } });
