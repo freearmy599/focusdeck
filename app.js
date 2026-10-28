@@ -1,6 +1,7 @@
 (() => {
   'use strict';
   const STORAGE_KEY = 'focusdeck-v1';
+  const TIMER_STORAGE_KEY = 'focusdeck-timer-v1';
   const $ = (id) => document.getElementById(id);
   const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
   const todayKey = (date = new Date()) => {
@@ -20,7 +21,7 @@
     notes: '', theme: 'dark', activity: {}, sessions: [], taskFilter: 'all'
   });
   let state = loadState();
-  let timer = { duration: 25 * 60, remaining: 25 * 60, running: false, endAt: null, interval: null, mode: 25, completed: false };
+  let timer = loadTimer();
   let activeView = 'dashboard';
   let currentTaskFilter = 'all';
   let toastTimer = null;
@@ -54,6 +55,26 @@
       showToast('Could not save. Your browser storage may be full.', 'error');
       return false;
     }
+  }
+  function loadTimer() {
+    const fallback = { duration: 1500, remaining: 1500, running: false, endAt: null, interval: null, mode: 25, completed: false };
+    try {
+      const saved = JSON.parse(localStorage.getItem(TIMER_STORAGE_KEY) || 'null');
+      if (!saved || !Number.isFinite(Number(saved.mode))) return fallback;
+      const mode = Math.min(180, Math.max(1, Math.round(Number(saved.mode))));
+      const duration = mode * 60;
+      const running = Boolean(saved.running) && Number.isFinite(Number(saved.endAt));
+      const remaining = running ? Math.max(0, Math.min(duration, Math.ceil((Number(saved.endAt) - Date.now()) / 1000))) : Math.max(0, Math.min(duration, safeNumber(saved.remaining, duration)));
+      return { duration, remaining, running, endAt: running ? Number(saved.endAt) : null, interval: null, mode, completed: Boolean(saved.completed) };
+    } catch (_) { return fallback; }
+  }
+  function persistTimer() {
+    try {
+      localStorage.setItem(TIMER_STORAGE_KEY, JSON.stringify({
+        mode: timer.mode, duration: timer.duration, remaining: timer.remaining,
+        running: timer.running, endAt: timer.endAt, completed: timer.completed
+      }));
+    } catch (_) { /* Timer persistence is optional if browser storage is unavailable. */ }
   }
   function escapeHTML(value) {
     return String(value).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch]);
@@ -328,6 +349,7 @@
     timer.duration = timer.mode * 60;
     timer.remaining = timer.duration;
     timer.completed = false;
+    persistTimer();
     renderTimer();
     $$('.timer-mode').forEach(b => b.classList.toggle('active', Number(b.dataset.duration) === timer.mode));
   }
@@ -336,6 +358,7 @@
     if (timer.remaining <= 0) { timer.remaining = timer.duration; timer.completed = false; }
     timer.running = true;
     timer.endAt = Date.now() + timer.remaining * 1000;
+    persistTimer();
     timer.interval = window.setInterval(tickTimer, 250);
     updateTimerButtons();
     renderTimer();
@@ -348,11 +371,13 @@
     timer.endAt = null;
     window.clearInterval(timer.interval);
     timer.interval = null;
+    persistTimer();
     renderTimer();
   }
   function resetTimer() {
     if (timer.interval) window.clearInterval(timer.interval);
     timer.running = false; timer.endAt = null; timer.remaining = timer.duration; timer.completed = false; timer.interval = null;
+    persistTimer();
     renderTimer();
   }
   function tickTimer() {
@@ -364,6 +389,7 @@
   function completeTimer() {
     if (timer.interval) window.clearInterval(timer.interval);
     timer.interval = null; timer.running = false; timer.endAt = null; timer.remaining = 0; timer.completed = true;
+    persistTimer();
     if (timer.mode === 25) {
       const key = todayKey();
       state.sessions.push({ date: key, minutes: 25, mode: 25, completedAt: Date.now() });
@@ -434,6 +460,7 @@
     if (!window.confirm('Reset FocusDeck on this device? Your tasks, notes, goals and activity will be permanently removed from this browser. Export a backup first if you may need them.')) return;
     if (timer.interval) window.clearInterval(timer.interval);
     timer = { duration: 1500, remaining: 1500, running: false, endAt: null, interval: null, mode: 25, completed: false };
+    persistTimer();
     state = freshState(); applyTheme(); saveState(); currentTaskFilter = 'all'; renderAll(); setView('dashboard'); showToast('Your workspace has been reset.');
   }
   function renderAll() {
@@ -491,6 +518,10 @@
     applyTheme();
     bindEvents();
     renderAll();
+    if (timer.running) {
+      if (timer.remaining <= 0) tickTimer();
+      else timer.interval = window.setInterval(tickTimer, 250);
+    }
     if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
       window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(err => console.warn('Offline support unavailable:', err)));
     }
