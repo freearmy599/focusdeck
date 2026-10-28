@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b0f14">
+  <meta name="description" content="A calm, focused workspace for planning your day, tracking tasks, and making time for deep work. Free, private, and simple.">
+  <meta name="application-name" content="FocusDeck">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./assets/focusdeck-icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./styles.css">
+  <title>FocusDeck — Make today count</title>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <a class="brand" href="#dashboard" aria-label="FocusDeck home">
+        <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M6 9.5 16 4l10 5.5v13L16 28 6 22.5z" fill="none" stroke="currentColor" stroke-width="2"/><path d="m11 16 3.2 3.2L21.5 12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        <span>Focus<span class="brand-light">Deck</span></span>
+      </a>
+      <div class="sidebar-label">WORKSPACE</div>
+      <nav class="primary-nav" aria-label="Main navigation">
+        <button class="nav-item active" data-view="dashboard"><span class="nav-icon">⌂</span> Overview</button>
+        <button class="nav-item" data-view="tasks"><span class="nav-icon">☷</span> My tasks <span class="nav-count" id="nav-task-count">0</span></button>
+        <button class="nav-item" data-view="focus"><span class="nav-icon">◷</span> Focus timer</button>
+        <button class="nav-item" data-view="notes"><span class="nav-icon">▤</span> Quick notes</button>
+        <button class="nav-item" data-view="insights"><span class="nav-icon">↗</span> Insights</button>
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="sidebar-tip">
+          <span class="tip-spark">✳</span>
+          <p class="tip-title">Small steps add up.</p>
+          <p class="tip-copy">You don't need a perfect day. Just a next step.</p>
+        </div>
+        <button class="nav-item" id="settings-button"><span class="nav-icon">⚙</span> Settings & backup</button>
+        <div class="privacy-note"><span class="privacy-dot"></span> Your data stays on this device</div>
+      </div>
+    </aside>
+
+    <main class="main-area">
+      <header class="topbar">
+        <button class="icon-button mobile-menu" id="mobile-menu" aria-label="Open navigation">☰</button>
+        <div class="breadcrumb"><span>Workspace</span><span class="breadcrumb-slash">/</span><strong id="breadcrumb-current">Overview</strong></div>
+        <div class="topbar-actions">
+          <span class="today-label" id="top-date"></span>
+          <button class="icon-button" id="theme-toggle" aria-label="Switch color theme" title="Switch color theme">☼</button>
+          <button class="avatar" id="focus-shortcut" aria-label="Start a focus session" title="Start a focus session">F</button>
+        </div>
+      </header>
+
+      <div class="content-wrap">
+        <section class="view active" id="view-dashboard" data-view-panel="dashboard">
+          <div class="welcome-row">
+            <div>
+              <p class="eyebrow" id="welcome-eyebrow">YOUR PERSONAL WORKSPACE</p>
+              <h1 id="greeting-title">Make today count<span class="title-period">.</span></h1>
+              <p class="subtitle" id="greeting-subtitle">A little progress adds up. Let's make it a good one.</p>
+            </div>
+            <button class="button button-primary" id="quick-add-task"><span class="button-plus">＋</span> Add a task</button>
+          </div>
+
+          <div class="stat-grid">
+            <article class="stat-card">
+              <div class="stat-top"><span class="stat-label">TASKS COMPLETED</span><span class="stat-icon cyan">✓</span></div>
+              <div class="stat-value"><span id="stat-completed">0</span><span class="stat-muted"> / <span id="stat-total">0</span></span></div>
+              <div class="progress-track"><div class="progress-fill" id="daily-progress-fill"></div></div>
+              <div class="stat-foot"><span id="daily-progress-label">Your day is just getting started</span></div>
+            </article>
+            <article class="stat-card">
+              <div class="stat-top"><span class="stat-label">FOCUS TIME TODAY</span><span class="stat-icon violet">◷</span></div>
+              <div class="stat-value"><span id="stat-focus">0</span><span class="stat-unit">min</span></div>
+              <div class="stat-foot"><span class="status-dot"></span><span id="focus-stat-caption">Every focused minute counts</span></div>
+            </article>
+            <article class="stat-card">
+              <div class="stat-top"><span class="stat-label">DAILY GOALS</span><span class="stat-icon amber">✳</span></div>
+              <div class="stat-value"><span id="stat-goals">0</span><span class="stat-muted"> / <span id="stat-goals-total">3</span></span></div>
+              <div class="stat-foot"><span id="goal-stat-caption">Choose what matters today</span></div>
+            </article>
+          </div>
+
+          <div class="dashboard-grid">
+            <section class="panel tasks-panel">
+              <div class="panel-heading">
+                <div><h2>Today's tasks</h2><p class="panel-subtitle">Keep your next step clear.</p></div>
+                <button class="text-button" data-open-view="tasks">View all <span>↗</span></button>
+              </div>
+              <div class="task-filter-row" role="group" aria-label="Filter today's tasks">
+                <button class="filter-chip active" data-task-filter="all">All <span id="filter-all-count">0</span></button>
+                <button class="filter-chip" data-task-filter="open">To do <span id="filter-open-count">0</span></button>
+                <button class="filter-chip" data-task-filter="done">Done <span id="filter-done-count">0</span></button>
+              </div>
+              <div class="task-list" id="dashboard-task-list"></div>
+              <button class="add-task-inline" id="inline-add-task"><span>＋</span> Add another task</button>
+            </section>
+
+            <section class="panel focus-panel">
+              <div class="panel-heading">
+                <div><h2>Focus session</h2><p class="panel-subtitle">One thing at a time.</p></div>
+                <span class="live-pill"><span></span> DEEP WORK</span>
+              </div>
+              <div class="timer-mode-switch" role="group" aria-label="Timer preset">
+                <button class="timer-mode active" data-duration="25">Focus</button>
+                <button class="timer-mode" data-duration="5">Short break</button>
+                <button class="timer-mode" data-duration="15">Long break</button>
+              </div>
+              <div class="timer-wrap">
+                <svg class="timer-ring" viewBox="0 0 220 220" aria-label="Focus timer progress">
+                  <circle class="timer-ring-track" cx="110" cy="110" r="98"></circle>
+                  <circle class="timer-ring-progress" id="timer-ring-progress" cx="110" cy="110" r="98"></circle>
+                </svg>
+                <div class="timer-center">
+                  <span class="timer-status" id="timer-status">READY WHEN YOU ARE</span>
+                  <strong id="timer-display">25:00</strong>
+                  <span class="timer-caption" id="timer-caption">minutes of focused work</span>
+                </div>
+              </div>
+              <div class="timer-controls">
+                <button class="button button-primary timer-main-button" id="timer-start">Start focus <span>→</span></button>
+                <button class="icon-button timer-reset" id="timer-reset" aria-label="Reset timer" title="Reset timer">↺</button>
+              </div>
+              <p class="timer-footnote" id="timer-footnote">Put distractions aside. You've got this.</p>
+            </section>
+          </div>
+
+          <div class="lower-grid">
+            <section class="panel goals-panel">
+              <div class="panel-heading">
+                <div><h2>Today's goals</h2><p class="panel-subtitle">Pick three things that matter.</p></div>
+                <button class="icon-button small-icon" id="edit-goals" aria-label="Edit daily goals" title="Edit goals">✎</button>
+              </div>
+              <div class="goals-list" id="goals-list"></div>
+            </section>
+            <section class="panel notes-panel">
+              <div class="panel-heading">
+                <div><h2>Quick notes</h2><p class="panel-subtitle">Catch a thought before it goes.</p></div>
+                <button class="text-button" data-open-view="notes">Open notes <span>↗</span></button>
+              </div>
+              <textarea id="dashboard-note" class="quick-note-input" rows="4" maxlength="5000" placeholder="A thought, an idea, a reminder..."></textarea>
+              <div class="note-footer"><span id="note-save-state">Saved on this device</span><span id="note-character-count">0 / 5000</span></div>
+            </section>
+          </div>
+          <footer class="page-footer"><span>Made for a more intentional day.</span><span><span class="footer-dot"></span> Private by design</span></footer>
+        </section>
+
+        <section class="view" id="view-tasks" data-view-panel="tasks">
+          <div class="page-heading-row"><div><p class="eyebrow">GET IT OUT OF YOUR HEAD</p><h1>My tasks<span class="title-period">.</span></h1><p class="subtitle">A clear list makes room for clear thinking.</p></div><button class="button button-primary" id="tasks-add-button">＋ New task</button></div>
+          <section class="panel full-panel">
+            <div class="tasks-toolbar">
+              <div class="search-field"><span>⌕</span><input type="search" id="task-search" placeholder="Search your tasks..." aria-label="Search tasks"></div>
+              <select id="task-status-filter" aria-label="Filter by status"><option value="all">All tasks</option><option value="open">To do</option><option value="done">Completed</option></select>
+              <select id="task-sort" aria-label="Sort tasks"><option value="priority">Priority first</option><option value="date">Due date</option><option value="created">Recently added</option></select>
+            </div>
+            <div class="full-task-list" id="full-task-list"></div>
+          </section>
+        </section>
+
+        <section class="view" id="view-focus" data-view-panel="focus">
+          <div class="page-heading-row"><div><p class="eyebrow">MAKE SPACE FOR DEEP WORK</p><h1>Focus time<span class="title-period">.</span></h1><p class="subtitle">Protect a little time for what matters most.</p></div></div>
+          <section class="panel focus-page-panel">
+            <div class="focus-page-copy"><span class="live-pill"><span></span> YOUR FOCUS SPACE</span><h2>Give one thing<br>your full attention.</h2><p>Choose a session, put distractions away, and begin.</p></div>
+            <div class="focus-page-timer">
+              <div class="timer-mode-switch large" role="group" aria-label="Timer preset"><button class="timer-mode active" data-duration="25">Focus · 25 min</button><button class="timer-mode" data-duration="5">Short break · 5 min</button><button class="timer-mode" data-duration="15">Long break · 15 min</button></div>
+              <div class="timer-wrap large-ring"><svg class="timer-ring" viewBox="0 0 220 220" aria-hidden="true"><circle class="timer-ring-track" cx="110" cy="110" r="98"></circle><circle class="timer-ring-progress" id="timer-ring-progress-large" cx="110" cy="110" r="98"></circle></svg><div class="timer-center"><span class="timer-status" id="timer-status-large">READY WHEN YOU ARE</span><strong id="timer-display-large">25:00</strong><span class="timer-caption" id="timer-caption-large">minutes of focused work</span></div></div>
+              <div class="timer-controls"><button class="button button-primary timer-main-button" id="timer-start-large">Start focus <span>→</span></button><button class="icon-button timer-reset" id="timer-reset-large" aria-label="Reset timer">↺</button></div>
+              <p class="timer-footnote" id="timer-footnote-large">Your progress is saved on this device.</p>
+            </div>
+          </section>
+          <div class="stat-grid focus-stats"><article class="stat-card"><div class="stat-top"><span class="stat-label">SESSIONS COMPLETED</span><span class="stat-icon cyan">✓</span></div><div class="stat-value" id="focus-sessions-total">0</div><div class="stat-foot">Every session is a win.</div></article><article class="stat-card"><div class="stat-top"><span class="stat-label">FOCUS TIME TODAY</span><span class="stat-icon violet">◷</span></div><div class="stat-value"><span id="focus-page-minutes">0</span><span class="stat-unit">min</span></div><div class="stat-foot">Time spent with intention.</div></article></div>
+        </section>
+
+        <section class="view" id="view-notes" data-view-panel="notes">
+          <div class="page-heading-row"><div><p class="eyebrow">A PLACE FOR YOUR THOUGHTS</p><h1>Quick notes<span class="title-period">.</span></h1><p class="subtitle">Capture ideas, reminders and anything worth remembering.</p></div><span class="saved-badge"><span></span> Auto-saved</span></div>
+          <section class="panel notes-page-panel"><div class="notes-page-toolbar"><span class="note-paper-icon">▤</span><span>MY NOTEBOOK</span><span class="toolbar-spacer"></span><span id="notes-last-saved">Stored on this device</span></div><textarea id="full-note" class="full-note-input" maxlength="20000" placeholder="Start writing...&#10;&#10;Ideas, reminders, plans — this space is yours."></textarea><div class="note-footer"><span>Your notes never leave this browser.</span><span id="full-note-count">0 / 20000</span></div></section>
+        </section>
+
+        <section class="view" id="view-insights" data-view-panel="insights">
+          <div class="page-heading-row"><div><p class="eyebrow">NOTICE YOUR PROGRESS</p><h1>Your insights<span class="title-period">.</span></h1><p class="subtitle">Consistency is built one day at a time.</p></div></div>
+          <div class="stat-grid insight-stat-grid"><article class="stat-card"><div class="stat-top"><span class="stat-label">TASKS COMPLETED</span><span class="stat-icon cyan">✓</span></div><div class="stat-value" id="insight-tasks">0</div><div class="stat-foot">All-time completed tasks.</div></article><article class="stat-card"><div class="stat-top"><span class="stat-label">FOCUS MINUTES</span><span class="stat-icon violet">◷</span></div><div class="stat-value" id="insight-focus">0</div><div class="stat-foot">Total recorded focus time.</div></article><article class="stat-card"><div class="stat-top"><span class="stat-label">ACTIVE DAYS</span><span class="stat-icon amber">✳</span></div><div class="stat-value" id="insight-days">0</div><div class="stat-foot">Days with a completed task or focus session.</div></article></div>
+          <section class="panel activity-panel"><div class="panel-heading"><div><h2>Last seven days</h2><p class="panel-subtitle">A snapshot of your daily activity.</p></div></div><div class="activity-chart" id="activity-chart"></div></section>
+          <section class="panel insight-message"><span class="insight-spark">✳</span><div><h2>Progress, not perfection.</h2><p>Your stats are here to help you notice patterns, not judge your day. Start small and keep showing up.</p></div></section>
+        </section>
+
+        <section class="view" id="view-settings" data-view-panel="settings">
+          <div class="page-heading-row"><div><p class="eyebrow">YOUR WORKSPACE, YOUR WAY</p><h1>Settings & backup<span class="title-period">.</span></h1><p class="subtitle">Manage your preferences and keep your data safe.</p></div></div>
+          <section class="panel settings-panel"><div class="settings-section"><div><h2>Appearance</h2><p>Choose the look that feels right for you.</p></div><div class="setting-control"><span>Color theme</span><button class="button button-secondary" id="settings-theme-toggle">Switch theme</button></div></div><div class="settings-section"><div><h2>Data & privacy</h2><p>Your information is stored locally in this browser. FocusDeck does not send your tasks or notes to a server.</p></div><div class="settings-actions"><button class="button button-secondary" id="export-data">↓ Export backup</button><label class="button button-secondary file-label">↑ Import backup<input type="file" id="import-data" accept="application/json,.json" hidden></label></div><p class="settings-help">Export a backup before clearing browser data or switching devices. Imported data replaces the current FocusDeck data.</p></div><div class="settings-section danger-zone"><div><h2>Reset workspace</h2><p>Remove your saved tasks, notes, goals and activity from this browser.</p></div><button class="button button-danger" id="reset-data">Reset all data</button></div><div class="settings-version">FocusDeck · Version 1.0 · Free and private by design</div></section>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <div class="modal-backdrop" id="task-modal-backdrop" hidden>
+    <section class="modal" role="dialog" aria-modal="true" aria-labelledby="task-modal-title">
+      <div class="modal-header"><div><p class="eyebrow">MAKE IT HAPPEN</p><h2 id="task-modal-title">Add a task</h2></div><button class="icon-button" id="task-modal-close" aria-label="Close dialog">×</button></div>
+      <form id="task-form">
+        <input type="hidden" id="task-id">
+        <label class="form-label" for="task-title">Task name</label><input class="form-input" id="task-title" name="title" maxlength="180" placeholder="What needs to get done?" required>
+        <div class="form-two-col"><div><label class="form-label" for="task-priority">Priority</label><select class="form-input" id="task-priority"><option value="medium">Medium</option><option value="high">High</option><option value="low">Low</option></select></div><div><label class="form-label" for="task-category">Category</label><select class="form-input" id="task-category"><option>Personal</option><option>Work</option><option>Study</option><option>Health</option><option>Other</option></select></div></div>
+        <label class="form-label" for="task-due-date">Due date</label><input class="form-input" type="date" id="task-due-date">
+        <div class="modal-actions"><button type="button" class="button button-secondary" id="task-cancel">Cancel</button><button type="submit" class="button button-primary" id="task-save">Save task <span>→</span></button></div>
+      </form>
+    </section>
+  </div>
+  <div class="toast-region" id="toast-region" aria-live="polite" aria-atomic="true"></div>
+  <script src="./app.js" defer></script>
+</body>
+</html>
