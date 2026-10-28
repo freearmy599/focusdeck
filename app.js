@@ -127,7 +127,7 @@
     $('stat-total').textContent = todayTasks.length;
     const pct = todayTasks.length ? Math.round(done / todayTasks.length * 100) : 0;
     $('daily-progress-fill').style.width = pct + '%';
-    $('daily-progress-label').textContent = todayTasks.length ? pct + '% of today's tasks complete' : 'Add a task to get started';
+    $('daily-progress-label').textContent = todayTasks.length ? pct + "% of today's tasks complete" : 'Add a task to get started';
     $('stat-focus').textContent = getTodayFocusMinutes();
     $('focus-stat-caption').textContent = getTodayFocusMinutes() ? 'Time well spent today' : 'Every focused minute counts';
     const goals = getGoals(), goalsDone = goals.filter(g => g.done).length;
