@@ -10,6 +10,7 @@ A free, privacy-first daily productivity workspace built with plain HTML, CSS an
 - Due-date filters for today, overdue, the next seven days and undated tasks
 - Priority, category and due date per task
 - Focus timer with 25-minute focus, 5-minute short break and 15-minute long break presets
+- Timer state resumes after a page refresh or accidental navigation
 - Daily goals and auto-saved quick notes
 - Seven-day activity overview and basic lifetime insights
 - Local browser storage, JSON export and import backup
