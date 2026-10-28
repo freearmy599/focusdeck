@@ -19,6 +19,7 @@ A free, privacy-first daily productivity workspace built with plain HTML, CSS an
 - Dark and light themes
 - Responsive mobile layout and installable PWA shell
 - Basic offline app-shell caching
+- Public daily-planning guide, crawler instructions and XML sitemap
 
 ## Run locally
 
@@ -44,4 +45,4 @@ The initial version contains no ads or payments. Once the product is tested with
 
 ## Version
 
-1.4 — custom categories, category filtering, task details, improved search, recurring tasks, due-date filters, and timer persistence.
+1.5 — daily-planning guide, sitemap and crawler instructions, custom categories, task details, recurring tasks, and timer persistence.
