@@ -8,7 +8,8 @@ A free, privacy-first daily productivity workspace built with plain HTML, CSS an
 - Create, edit, complete, search, sort and delete tasks
 - Recurring tasks (daily, weekdays, weekly and monthly) with automatic next-occurrence scheduling
 - Due-date filters for today, overdue, the next seven days and undated tasks
-- Priority, category and due date per task
+- Priority, category, optional task details and due date per task
+- Search task names, categories and task details
 - Focus timer with 25-minute focus, 5-minute short break and 15-minute long break presets
 - Timer state resumes after a page refresh or accidental navigation
 - Daily goals and auto-saved quick notes
@@ -42,4 +43,4 @@ The initial version contains no ads or payments. Once the product is tested with
 
 ## Version
 
-1.1 — recurring tasks, due-date filters, improved offline freshness and sharing metadata.
+1.2 — task details, improved search, recurring tasks, due-date filters, and timer persistence.
